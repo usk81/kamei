@@ -17,22 +17,24 @@ import (
 var filename = flag.String("output", "../family_names.go", "output file name")
 
 func main() {
-	f, err := os.OpenFile("kamei.json", os.O_RDWR, 0666)
-	defer func() {
-		if err = f.Close(); err != nil {
-			log.Println(err)
-		}
-	}()
-	if err != nil {
+	if err := run(); err != nil {
 		log.Fatal(err)
 	}
-	bs, err := io.ReadAll(f)
+}
+
+func run() error {
+	f, err := os.OpenFile("kamei.json", os.O_RDWR, 0666)
 	if err != nil {
-		log.Fatal(err)
+		return err
+	}
+	bs, err := io.ReadAll(f)
+	_ = f.Close()
+	if err != nil {
+		return err
 	}
 	var flats map[string][]string
 	if err = json.Unmarshal(bs, &flats); err != nil {
-		log.Fatal("json.Unmarshal:", err)
+		return err
 	}
 	for k, v := range flats {
 		sortSlice(v)
@@ -55,25 +57,36 @@ func main() {
 	var buf bytes.Buffer
 	err = template.Must(template.New("tmpl").Parse(tmpl)).Execute(&buf, familyNames)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	w, err := os.OpenFile(*filename, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		log.Fatal("os.OpenFile:", err)
+		return err
 	}
 	_, err = w.Write(buf.Bytes())
 	_ = w.Close()
 	if err != nil {
-		log.Fatal("w.Writ:", err)
+		return err
 	}
-
 	j, err := json.MarshalIndent(&flats, "", "  ")
 	if err != nil {
-		log.Fatal("json.MarshalIndent:", err)
+		log.Println("json.MarshalIndent")
+		return err
 	}
-	if _, err = f.Write(j); err != nil {
-		log.Fatal("f.Write:", err)
+	t, err := os.CreateTemp("/tmp", "kamei")
+	if err != nil {
+		return err
 	}
+	if _, err = t.Write(j); err != nil {
+		return err
+	}
+	tmpfilePath := t.Name()
+	_ = t.Close()
+	if err = os.Rename(tmpfilePath, "./kamei.json"); err != nil {
+		_ = os.Remove(tmpfilePath)
+		return err
+	}
+	return nil
 }
 
 func sortSlice(ss []string) {
