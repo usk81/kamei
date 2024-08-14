@@ -32,7 +32,8 @@ func Find(kanji string) []string {
 	return rubys
 }
 
-// Contains returns family names containing the string substr exist in the list of family names registered in this package.
+// Contains returns family names
+// containing the string substr exist in the list of family names registered in this package.
 func Contains(substr string) FamilyNames {
 	return searchByKanji(substr, strings.Contains)
 }
