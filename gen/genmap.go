@@ -6,6 +6,7 @@ import (
 	"cmp"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -14,7 +15,22 @@ import (
 	"unicode/utf8"
 )
 
-var filename = flag.String("output", "../family_names.go", "output file name")
+type ReadmeRequestParameter struct {
+	Count                int
+	Output               string
+	Template             string
+	TemporaryFilePattern string
+}
+
+type ReadmeTemplateParameter struct {
+	Count int
+}
+
+var (
+	filename = flag.String("output", "../family_names.go", "output file name")
+	readme   = flag.String("readme", "../README.md", "output readme file name")
+	readmeja = flag.String("readmeja", "../README-ja.md", "output japanese readme file name")
+)
 
 func main() {
 	if err := run(); err != nil {
@@ -40,6 +56,7 @@ func run() error {
 		sortSlice(v)
 		flats[k] = v
 	}
+	l := len(flats)
 
 	familyNames := map[int]map[string][]string{}
 	for kanji, rubys := range flats {
@@ -78,11 +95,57 @@ func run() error {
 		return err
 	}
 	if _, err = t.Write(j); err != nil {
+		_ = t.Close()
 		return err
 	}
 	tmpfilePath := t.Name()
 	_ = t.Close()
 	if err = os.Rename(tmpfilePath, "./kamei.json"); err != nil {
+		_ = os.Remove(tmpfilePath)
+		return err
+	}
+	err = updateReadmeFile(ReadmeRequestParameter{
+		Count:                l,
+		Output:               *readme,
+		Template:             "README.md.tpl",
+		TemporaryFilePattern: "kamei_readme",
+	})
+	if err != nil {
+		return err
+	}
+	err = updateReadmeFile(ReadmeRequestParameter{
+		Count:                l,
+		Output:               *readmeja,
+		Template:             "README-ja.md.tpl",
+		TemporaryFilePattern: "kamei_readme_ja",
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func updateReadmeFile(r ReadmeRequestParameter) error {
+	fmt.Printf("%#v\n", r)
+	tpl, err := template.New(r.Template).ParseFiles(r.Template)
+	if err != nil {
+		return err
+	}
+	t, err := os.CreateTemp("/tmp", r.TemporaryFilePattern)
+	if err != nil {
+		return err
+	}
+	tmpfilePath := t.Name()
+	err = tpl.Execute(t, ReadmeTemplateParameter{
+		Count: r.Count,
+	})
+	_ = t.Close()
+	if err != nil {
+		return err
+	}
+	if err = os.Rename(tmpfilePath, r.Output); err != nil {
+		_ = t.Close()
 		_ = os.Remove(tmpfilePath)
 		return err
 	}
