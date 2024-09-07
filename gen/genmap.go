@@ -39,7 +39,8 @@ func main() {
 }
 
 func run() error {
-	f, err := os.OpenFile("kamei.json", os.O_RDWR, 0666)
+	// skipcq: GSC-G302
+	f, err := os.OpenFile("kamei.json", os.O_RDWR, 0644)
 	if err != nil {
 		return err
 	}
@@ -76,6 +77,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// skipcq: GSC-G302
 	w, err := os.OpenFile(*filename, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err

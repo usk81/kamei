@@ -104,6 +104,7 @@ func Pickup(n int) FlatFamilyNames {
 	if n >= l {
 		return FlatAll()
 	}
+	// skipcq: GSC-G404
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	result := FlatFamilyNames{}
 	for i := 0; i < n; i++ {
