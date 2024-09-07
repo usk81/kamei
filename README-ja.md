@@ -46,7 +46,7 @@ fmt.Printf("%#v", kamei.Contains("佐"))
 
 ### HasPrefix 
 
-HasSuffixはパッケージに登録されている名字から指定した文字列に前夫一致する名字の一覧を返却します。
+HasSuffixはパッケージに登録されている名字から指定した文字列に前方一致する名字の一覧を返却します。
 
 ```Go
 fmt.Printf("%#v", kamei.HasPrefix("佐々"))
