@@ -2,11 +2,9 @@
 package main
 
 import (
-	"bytes"
 	"cmp"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -39,23 +37,9 @@ func main() {
 }
 
 func run() error {
-	// skipcq: GSC-G302
-	f, err := os.OpenFile("kamei.json", os.O_RDWR, 0644)
+	flats, err := openJsonFile()
 	if err != nil {
 		return err
-	}
-	bs, err := io.ReadAll(f)
-	_ = f.Close()
-	if err != nil {
-		return err
-	}
-	var flats map[string][]string
-	if err = json.Unmarshal(bs, &flats); err != nil {
-		return err
-	}
-	for k, v := range flats {
-		sortSlice(v)
-		flats[k] = v
 	}
 	l := len(flats)
 
@@ -72,40 +56,14 @@ func run() error {
 		}
 	}
 
-	var buf bytes.Buffer
-	err = template.Must(template.New("tmpl").Parse(tmpl)).Execute(&buf, familyNames)
-	if err != nil {
+	if err = updateFamilyNameList(familyNames); err != nil {
 		return err
 	}
-	// skipcq: GSC-G302
-	w, err := os.OpenFile(*filename, os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
+
+	if err = updateJsonFile(flats); err != nil {
 		return err
 	}
-	_, err = w.Write(buf.Bytes())
-	_ = w.Close()
-	if err != nil {
-		return err
-	}
-	j, err := json.MarshalIndent(&flats, "", "  ")
-	if err != nil {
-		log.Println("json.MarshalIndent")
-		return err
-	}
-	t, err := os.CreateTemp("/tmp", "kamei")
-	if err != nil {
-		return err
-	}
-	if _, err = t.Write(j); err != nil {
-		_ = t.Close()
-		return err
-	}
-	tmpfilePath := t.Name()
-	_ = t.Close()
-	if err = os.Rename(tmpfilePath, "./kamei.json"); err != nil {
-		_ = os.Remove(tmpfilePath)
-		return err
-	}
+
 	err = updateReadmeFile(ReadmeRequestParameter{
 		Count:                l,
 		Output:               *readme,
@@ -128,8 +86,69 @@ func run() error {
 	return nil
 }
 
+func openJsonFile() (result map[string][]string, err error) {
+	// skipcq: GSC-G302
+	f, err := os.OpenFile("kamei.json", os.O_RDWR, 0644)
+	if err != nil {
+		return
+	}
+	bs, err := io.ReadAll(f)
+	_ = f.Close()
+	if err != nil {
+		return
+	}
+	if err = json.Unmarshal(bs, &result); err != nil {
+		return
+	}
+	for k, v := range result {
+		sortSlice(v)
+		result[k] = v
+	}
+	return
+}
+
+func updateFamilyNameList(familyNames map[int]map[string][]string) error {
+	t, err := os.CreateTemp("/tmp", "kamei_list")
+	if err != nil {
+		return err
+	}
+	tmpfilePath := t.Name()
+	err = template.Must(template.New("tmpl").Parse(tmpl)).Execute(t, familyNames)
+	_ = t.Close()
+	if err != nil {
+		return err
+	}
+	if err = os.Rename(tmpfilePath, *filename); err != nil {
+		_ = os.Remove(tmpfilePath)
+		return err
+	}
+	return nil
+}
+
+func updateJsonFile(flats map[string][]string) error {
+	j, err := json.MarshalIndent(&flats, "", "  ")
+	if err != nil {
+		log.Println("json.MarshalIndent")
+		return err
+	}
+	t, err := os.CreateTemp("/tmp", "kamei")
+	if err != nil {
+		return err
+	}
+	if _, err = t.Write(j); err != nil {
+		_ = t.Close()
+		return err
+	}
+	tmpfilePath := t.Name()
+	_ = t.Close()
+	if err = os.Rename(tmpfilePath, "./kamei.json"); err != nil {
+		_ = os.Remove(tmpfilePath)
+		return err
+	}
+	return nil
+}
+
 func updateReadmeFile(r ReadmeRequestParameter) error {
-	fmt.Printf("%#v\n", r)
 	tpl, err := template.New(r.Template).ParseFiles(r.Template)
 	if err != nil {
 		return err
