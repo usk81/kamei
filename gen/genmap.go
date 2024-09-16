@@ -37,7 +37,7 @@ func main() {
 }
 
 func run() error {
-	flats, err := openJsonFile()
+	flats, err := openJSONFile()
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func run() error {
 		return err
 	}
 
-	if err = updateJsonFile(flats); err != nil {
+	if err = updateJSONFile(flats); err != nil {
 		return err
 	}
 
@@ -86,7 +86,7 @@ func run() error {
 	return nil
 }
 
-func openJsonFile() (result map[string][]string, err error) {
+func openJSONFile() (result map[string][]string, err error) {
 	// skipcq: GSC-G302
 	f, err := os.OpenFile("kamei.json", os.O_RDWR, 0644)
 	if err != nil {
@@ -125,7 +125,7 @@ func updateFamilyNameList(familyNames map[int]map[string][]string) error {
 	return nil
 }
 
-func updateJsonFile(flats map[string][]string) error {
+func updateJSONFile(flats map[string][]string) error {
 	j, err := json.MarshalIndent(&flats, "", "  ")
 	if err != nil {
 		log.Println("json.MarshalIndent")
