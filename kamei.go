@@ -104,6 +104,8 @@ func Pickup(n int) FlatFamilyNames {
 	if n >= l {
 		return FlatAll()
 	}
+
+	// nolint:gosec // This random value does not need to be secure.
 	// skipcq: GSC-G404
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	result := FlatFamilyNames{}
