@@ -2,7 +2,7 @@
 
 "Kamei" is a package that manages Japanese family names, and is used to obtain the corresponding family names from part of a family name, or to obtain rubys.
 
-Currently, it contains **2636** family names.
+Currently, it contains **2671** family names.
 
 ## Notice
 
